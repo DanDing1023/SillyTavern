@@ -1992,7 +1992,7 @@ function trySelectPresetByName(name) {
     }
 }
 
-async function saveOpenAIPreset(name, settings) {
+async function saveOpenAIPreset(name, settings, triggerUi = true) {
     const presetBody = {
         chat_completion_source: settings.chat_completion_source,
         openai_model: settings.openai_model,
@@ -2046,7 +2046,7 @@ async function saveOpenAIPreset(name, settings) {
             const value = openai_setting_names[data.name];
             Object.assign(openai_settings[value], presetBody);
             $(`#settings_perset_openai option[value="${value}"]`).attr('selected', true);
-            $('#settings_perset_openai').trigger('change');
+            if (triggerUi) $('#settings_perset_openai').trigger('change');
         }
         else {
             openai_settings.push(presetBody);
@@ -2055,7 +2055,7 @@ async function saveOpenAIPreset(name, settings) {
             option.selected = true;
             option.value = openai_settings.length - 1;
             option.innerText = data.name;
-            $('#settings_perset_openai').append(option).trigger('change');
+            if (triggerUi) $('#settings_perset_openai').append(option).trigger('change');
         }
     } else {
         toastr.error('Failed to save preset');
@@ -2324,7 +2324,8 @@ async function onLogitBiasPresetDeleteClick() {
 
 // Load OpenAI preset settings
 function onSettingsPresetChange() {
-    oai_settings.preset_settings_openai = $('#settings_perset_openai').find(":selected").text();
+    const presetName = $('#settings_perset_openai').find(":selected").text();
+    oai_settings.preset_settings_openai = presetName;
     const preset = openai_settings[openai_setting_names[oai_settings.preset_settings_openai]];
 
     const updateInput = (selector, value) => $(selector).val(value).trigger('input');
@@ -2382,7 +2383,7 @@ function onSettingsPresetChange() {
     $(`#chat_completion_source`).trigger('change');
     $(`#openai_logit_bias_preset`).trigger('change');
 
-    eventSource.emit(event_types.OAI_PRESET_CHANGED, oai_settings);
+    eventSource.emit(event_types.OAI_PRESET_CHANGED, {preset: preset, settings: oai_settings, presetName: presetName, callback: saveOpenAIPreset});
 
     saveSettingsDebounced();
 }
